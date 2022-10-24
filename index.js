@@ -1,95 +1,124 @@
-const button = document.getElementById("GetUsers");
-button.addEventListener("click", getUserData);
-function getUserData() {
-  let url = "https://pokeapi.co/api/v2/pokemon?limit=10&offset=0";
+// DOM Objects
+const mainScreen = document.querySelector('.main-screen');
+const pokeName = document.querySelector('.poke-name');
+const pokeId = document.querySelector('.poke-id');
+const pokeFrontImage = document.querySelector('.poke-front-image');
+const pokeBackImage = document.querySelector('.poke-back-image');
+const pokeTypeOne = document.querySelector('.poke-type-one');
+const pokeTypeTwo = document.querySelector('.poke-type-two');
+const pokeWeight = document.querySelector('.poke-weight');
+const pokeHeight = document.querySelector('.poke-height');
+const pokeListItems = document.querySelectorAll('.list-item');
+const leftButton = document.querySelector('.left-button');
+const rightButton = document.querySelector('.right-button');
+
+
+// constants and variables
+const TYPES = [
+  'normal', 'fighting', 'flying',
+  'poison', 'ground', 'rock',
+  'bug', 'ghost', 'steel',
+  'fire', 'water', 'grass',
+  'electric', 'psychic', 'ice',
+  'dragon', 'dark', 'fairy'
+];
+let prevUrl = null;
+let nextUrl = null;
+
+
+// Functions
+const capitalize = (str) => str[0].toUpperCase() + str.substr(1);
+
+const resetScreen = () => {
+  mainScreen.classList.remove('hide');
+  for (const type of TYPES) {
+    mainScreen.classList.remove(type);
+  }
+};
+
+const fetchPokeList = url => {
   fetch(url)
-    .then(function (response) {
-      return response.json();
-    })
-    .then(function (resp) {
-        const sec = document.getElementById('results') ;
-        for(let a of resp.results){
-            console.log(a.name, a.url);
-            const an = document.createElement('p');
-            an.innerHTML = "<a href='" + a.url + "'>" + a.name + "</a>";
-            sec.appendChild(an);
+    .then(res => res.json())
+    .then(data => {
+      const { results, previous, next } = data;
+      prevUrl = previous;
+      nextUrl = next;
+
+      for (let i = 0; i < pokeListItems.length ; i++) {
+        const pokeListItem = pokeListItems[i];
+        const resultData = results[i];
+
+        if (resultData) {
+          const { name, url } = resultData;
+          const urlArray = url.split('/');
+          const id = urlArray[urlArray.length - 2];
+          pokeListItem.textContent = id + '. ' + capitalize(name);
+        } else {
+          pokeListItem.textContent = '';
         }
-    //   document.getElementById("Output").innerHTML = JSON.stringify(resp);
-    })
-    .catch(function (resp) {
-      document.getElementById("Output").innerHTML = "There was an error";
+      }
     });
+};
+
+const fetchPokeData = id => {
+  fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      resetScreen();
+
+      const dataTypes = data['types'];
+      const dataFirstType = dataTypes[0];
+      const dataSecondType = dataTypes[1];
+      pokeTypeOne.textContent = capitalize(dataFirstType['type']['name']);
+      if (dataSecondType) {
+        pokeTypeTwo.classList.remove('hide');
+        pokeTypeTwo.textContent = capitalize(dataSecondType['type']['name']);
+      } else {
+        pokeTypeTwo.classList.add('hide');
+        pokeTypeTwo.textContent = '';
+      }
+      mainScreen.classList.add(dataFirstType['type']['name']);
+
+      pokeName.textContent = capitalize(data['name']);
+      pokeId.textContent = '#' + data['id'].toString().padStart(3, '0');
+      pokeWeight.textContent = data['weight'];
+      pokeHeight.textContent = data['height'];
+      pokeFrontImage.src = data['sprites']['front_default'] || '';
+      pokeBackImage.src = data['sprites']['back_default'] || '';
+    });
+};
+
+const handleLeftButtonClick = () => {
+  if (prevUrl) {
+    fetchPokeList(prevUrl);
+  }
+};
+
+const handleRightButtonClick = () => {
+  if (nextUrl) {
+    fetchPokeList(nextUrl);
+  }
+};
+
+const handleListItemClick = (e) => {
+  if (!e.target) return;
+
+  const listItem = e.target;
+  if (!listItem.textContent) return;
+
+  const id = listItem.textContent.split('.')[0];
+  fetchPokeData(id);
+};
+
+
+// adding event listeners
+leftButton.addEventListener('click', handleLeftButtonClick);
+rightButton.addEventListener('click', handleRightButtonClick);
+for (const pokeListItem of pokeListItems) {
+  pokeListItem.addEventListener('click', handleListItemClick);
 }
 
 
+// initialize App
+fetchPokeList('https://pokeapi.co/api/v2/pokemon?offset=0&limit=20');
 
-
-
-const button2 = document.getElementById("results");
-button2.addEventListener("click", getSpriteData);
-function getSpriteData(ev) {
-    ev.preventDefault();
-    console.log(ev.target.attributes[0].value);
-  let url = ev.target.attributes[0].value;
-  fetch(url)
-    .then(function (response) {
-      return response.json();
-    })
-    .then(function (resp) {
-        for(let a of resp){
-            console.log(a);
-        }
-    })
-    .catch(function (resp) {
-      document.getElementById("Output").innerHTML = "There was an error" + resp;
-    });
-}
-
-
-
-
-
-
-
-
-
-// function pokemonList(pokemon_name) {
-//   const obj = {
-//     pokemon_name:
-//     rarity
-//   }
-  
-
-// }
-
-// const form = document.getElementById('createUser')
-// form.addEventListener("submit", saveUserData);
-// function saveUserData(e) {
-//   e.preventDefault();
-//   const url = "https://pokeapi.co/api/v2/pokemon/ditto";
-//   const FD  = new FormData(form);
-//   FD.append("name",form.first_name.value + ' ' + 
-// form.last_name.value);
-//   let jsonObject = {};
-//   for (let pair  of FD.entries()) {
-//       jsonObject[pair[0]] = pair[1];
-//   }
-//   console.log(jsonObject);
-//   fetch(url, {
-//     method: 'POST',
-//     headers: {'Content-Type': 'application/json'},
-//     body: JSON.stringify(jsonObject)
-//   })
-//     .then(function(response) {
-//         console.log(response.json());
-//         return response.json();
-//     })
-//     .then(function(data) {
-//         console.log('raw data',data);
-//         document.getElementById("Output").innerHTML = 
-// "Successfully created id: "+data.id;
-//     })
-//     .catch(function(error) {
-//         document.getElementById("Output").innerHTML = "Th1ere was an error "+error;
-//     });
-// }
